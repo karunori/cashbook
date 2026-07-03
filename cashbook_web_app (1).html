@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>現金出納帳Webアプリ</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --card: #ffffff;
+      --ink: #1f2933;
+      --muted: #6b7280;
+      --accent: #0f766e;
+      --accent2: #f59e0b;
+      --danger: #dc2626;
+      --line: #e5e7eb;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Noto Sans JP", sans-serif;
+      background: linear-gradient(180deg, #fff7ed 0%, var(--bg) 45%);
+      color: var(--ink);
+    }
+    header {
+      padding: 22px 16px 12px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: rgba(246,244,239,0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+    }
+    h1 {
+      margin: 0;
+      font-size: 22px;
+      letter-spacing: 0.02em;
+    }
+    .sub {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 14px;
+      display: grid;
+      gap: 14px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(0,0,0,0.06);
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 8px 24px rgba(31,41,51,0.06);
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .balance {
+      grid-column: span 2;
+      background: #0f766e;
+      color: white;
+      border-radius: 16px;
+      padding: 16px;
+    }
+    .balance .label { opacity: .9; font-size: 13px; }
+    .balance .amount { font-size: 34px; font-weight: 800; margin-top: 4px; }
+    .metric {
+      background: #f9fafb;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .metric .label { color: var(--muted); font-size: 12px; }
+    .metric .amount { font-size: 20px; font-weight: 800; margin-top: 3px; }
+    .upload {
+      display: grid;
+      gap: 10px;
+    }
+    .upload-box {
+      border: 2px dashed #cbd5e1;
+      border-radius: 16px;
+      padding: 16px;
+      text-align: center;
+      background: #fafafa;
+    }
+    button, .file-label {
+      width: 100%;
+      border: 0;
+      border-radius: 14px;
+      padding: 13px 14px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    .file-label {
+      background: var(--accent);
+      color: white;
+    }
+    .secondary { background: #e0f2fe; color: #075985; }
+    .warning { background: var(--accent2); color: #111827; }
+    .danger { background: #fee2e2; color: var(--danger); }
+    input[type=file] { display: none; }
+    .preview {
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      display: none;
+      background: #fff;
+    }
+    form {
+      display: grid;
+      gap: 10px;
+    }
+    label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #374151;
+    }
+    input, select {
+      width: 100%;
+      margin-top: 5px;
+      padding: 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 12px;
+      font-size: 16px;
+      background: #fff;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .ai-note {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--muted);
+      background: #f8fafc;
+      border-radius: 12px;
+      padding: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 9px 6px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      white-space: nowrap;
+    }
+    .table-wrap { overflow-x: auto; }
+    .actions {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .actions button { padding: 10px; font-size: 13px; }
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 18px;
+      font-size: 13px;
+    }
+    .del {
+      background: transparent;
+      color: var(--danger);
+      padding: 4px 6px;
+      width: auto;
+      font-size: 12px;
+    }
+    @media (max-width: 480px) {
+      main { padding: 10px; }
+      .card { padding: 14px; border-radius: 16px; }
+      h1 { font-size: 20px; }
+      .balance .amount { font-size: 30px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>現金出納帳Webアプリ</h1>
+    <div class="sub">領収書アップロード → AI解析風の自動入力 → 一覧管理 → CSV出力</div>
+  </header>
+
+  <main>
+    <section class="dashboard">
+      <div class="balance">
+        <div class="label">現在残高</div>
+        <div class="amount" id="balance">¥0</div>
+      </div>
+      <div class="metric">
+        <div class="label">入金合計</div>
+        <div class="amount" id="income">¥0</div>
+      </div>
+      <div class="metric">
+        <div class="label">出金合計</div>
+        <div class="amount" id="expense">¥0</div>
+      </div>
+    </section>
+
+    <section class="card upload">
+      <h2>① 領収書の写真をアップロード・撮影</h2>
+      <div class="upload-box">
+        <label class="file-label" for="receiptImage">📷 領収書を撮影・アップロード</label>
+        <input id="receiptImage" type="file" accept="image/*" capture="environment" />
+        <p class="sub">スマホではカメラ起動、PCでは画像選択ができます。</p>
+      </div>
+      <img id="preview" class="preview" alt="領収書プレビュー" />
+      <button class="secondary" id="aiButton">② AIで解析してフォームへ自動入力</button>
+      <div class="ai-note">
+        ※この1ファイル版では、画像名や現在日付からデモ解析します。実運用で本物のAI OCRにする場合は、OpenAI APIやGoogle Vision APIなどを接続してください。
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>② 自動入力フォーム</h2>
+      <form id="entryForm">
+        <div class="row">
+          <label>区分
+            <select id="type">
+              <option value="expense">出金</option>
+              <option value="income">入金</option>
+            </select>
+          </label>
+          <label>日付
+            <input id="date" type="date" required />
+          </label>
+        </div>
+        <label>金額
+          <input id="amount" type="number" inputmode="numeric" placeholder="例：1200" required />
+        </label>
+        <label>店舗名
+          <input id="store" type="text" placeholder="例：スーパー青島" />
+        </label>
+        <label>用途
+          <input id="purpose" type="text" placeholder="例：仕入れ・備品・交通費" />
+        </label>
+        <button class="warning" type="submit">帳簿に追加</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>③ 入力内容一覧</h2>
+      <div class="actions">
+        <button class="secondary" id="downloadCsv">CSVダウンロード</button>
+        <button class="danger" id="clearAll">全削除</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>日付</th>
+              <th>区分</th>
+              <th>金額</th>
+              <th>店舗名</th>
+              <th>用途</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+      <div id="empty" class="empty">まだ記録がありません。</div>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "cashbook_entries_v1";
+    let entries = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    let lastFileName = "";
+
+    const yen = n => "¥" + Number(n || 0).toLocaleString("ja-JP");
+    const today = () => new Date().toISOString().slice(0, 10);
+
+    document.getElementById("date").value = today();
+
+    document.getElementById("receiptImage").addEventListener("change", e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      lastFileName = file.name || "";
+      const img = document.getElementById("preview");
+      img.src = URL.createObjectURL(file);
+      img.style.display = "block";
+    });
+
+    document.getElementById("aiButton").addEventListener("click", () => {
+      const name = lastFileName.toLowerCase();
+
+      document.getElementById("date").value = today();
+      document.getElementById("type").value = "expense";
+
+      let amount = "";
+      const amountMatch = name.match(/(\d{3,6})/);
+      if (amountMatch) amount = amountMatch[1];
+
+      let store = "未解析";
+      if (name.includes("family") || name.includes("famima")) store = "ファミリーマート";
+      else if (name.includes("seven") || name.includes("711")) store = "セブンイレブン";
+      else if (name.includes("lawson")) store = "ローソン";
+      else if (name.includes("aeon")) store = "イオン";
+
+      let purpose = "経費";
+      if (name.includes("gas") || name.includes("fuel")) purpose = "ガソリン代";
+      else if (name.includes("food") || name.includes("仕入")) purpose = "仕入れ";
+      else if (name.includes("parking")) purpose = "駐車場代";
+
+      document.getElementById("amount").value = amount;
+      document.getElementById("store").value = store;
+      document.getElementById("purpose").value = purpose;
+
+      alert("AI解析デモでフォームに入力しました。内容を確認して追加してください。");
+    });
+
+    document.getElementById("entryForm").addEventListener("submit", e => {
+      e.preventDefault();
+      const entry = {
+        id: Date.now(),
+        type: document.getElementById("type").value,
+        date: document.getElementById("date").value,
+        amount: Number(document.getElementById("amount").value || 0),
+        store: document.getElementById("store").value.trim(),
+        purpose: document.getElementById("purpose").value.trim()
+      };
+      entries.unshift(entry);
+      save();
+      e.target.reset();
+      document.getElementById("date").value = today();
+      document.getElementById("type").value = "expense";
+    });
+
+    function save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      render();
+    }
+
+    function render() {
+      const tbody = document.getElementById("tbody");
+      const empty = document.getElementById("empty");
+      tbody.innerHTML = "";
+
+      let income = 0;
+      let expense = 0;
+
+      entries.forEach(entry => {
+        if (entry.type === "income") income += entry.amount;
+        else expense += entry.amount;
+
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${entry.date}</td>
+          <td>${entry.type === "income" ? "入金" : "出金"}</td>
+          <td>${yen(entry.amount)}</td>
+          <td>${escapeHtml(entry.store || "")}</td>
+          <td>${escapeHtml(entry.purpose || "")}</td>
+          <td><button class="del" onclick="removeEntry(${entry.id})">削除</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("income").textContent = yen(income);
+      document.getElementById("expense").textContent = yen(expense);
+      document.getElementById("balance").textContent = yen(income - expense);
+      empty.style.display = entries.length ? "none" : "block";
+    }
+
+    function removeEntry(id) {
+      entries = entries.filter(e => e.id !== id);
+      save();
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[s]));
+    }
+
+    document.getElementById("downloadCsv").addEventListener("click", () => {
+      const header = ["日付", "区分", "金額", "店舗名", "用途"];
+      const rows = entries.map(e => [
+        e.date,
+        e.type === "income" ? "入金" : "出金",
+        e.amount,
+        e.store,
+        e.purpose
+      ]);
+
+      const csv = [header, ...rows]
+        .map(row => row.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(","))
+        .join("\n");
+
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "現金出納帳.csv";
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById("clearAll").addEventListener("click", () => {
+      if (confirm("すべての記録を削除しますか？")) {
+        entries = [];
+        save();
+      }
+    });
+
+    render();
+  </script>
+</body>
+</html>
