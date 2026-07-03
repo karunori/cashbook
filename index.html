@@ -1,1 +1,265 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="現金出納帳" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>現金出納帳</title>
+  <style>
+    :root {
+      --bg:#f6f4ef; --card:#fff; --ink:#17202a; --muted:#6b7280;
+      --main:#0f766e; --main2:#115e59; --sub:#f59e0b; --red:#dc2626;
+      --line:#e5e7eb; --green:#16a34a; --blue:#0369a1;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:-apple-system,BlinkMacSystemFont,"Noto Sans JP","Yu Gothic",system-ui,sans-serif;
+      background:linear-gradient(180deg,#fff7ed 0%,#f6f4ef 35%,#f8fafc 100%);
+      color:var(--ink);
+      padding-bottom:22px;
+    }
+    header{
+      position:sticky;top:0;z-index:20;
+      padding:18px 14px 12px;
+      background:rgba(255,247,237,.94);
+      backdrop-filter:blur(10px);
+      border-bottom:1px solid rgba(0,0,0,.06);
+    }
+    .head{max-width:860px;margin:auto;display:flex;gap:10px;align-items:center}
+    .logo{width:42px;height:42px;border-radius:14px;background:var(--main);display:grid;place-items:center;color:#fff;font-size:24px;font-weight:900}
+    h1{font-size:21px;margin:0}
+    .small{font-size:12px;color:var(--muted);margin-top:3px}
+    main{max-width:860px;margin:auto;padding:12px;display:grid;gap:12px}
+    .card{
+      background:var(--card);border:1px solid rgba(0,0,0,.06);border-radius:18px;
+      padding:15px;box-shadow:0 8px 24px rgba(31,41,51,.06)
+    }
+    h2{font-size:17px;margin:0 0 12px}
+    .dash{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .balance{grid-column:1/-1;background:linear-gradient(135deg,var(--main),var(--main2));color:#fff;border-radius:18px;padding:18px}
+    .label{font-size:12px;color:var(--muted)}
+    .balance .label{color:rgba(255,255,255,.86)}
+    .big{font-size:34px;font-weight:900;margin-top:3px}
+    .metric{border:1px solid var(--line);background:#f9fafb;border-radius:15px;padding:12px}
+    .metric .num{font-size:20px;font-weight:900;margin-top:4px}
+    .tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .tab{background:#eef2f7;color:#334155;border:0;border-radius:14px;padding:12px;font-weight:800}
+    .tab.active{background:var(--main);color:white}
+    button,.fileBtn{
+      width:100%;border:0;border-radius:14px;padding:13px 12px;font-weight:800;font-size:15px;
+      display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer
+    }
+    .primary,.fileBtn{background:var(--main);color:#fff}
+    .blue{background:#e0f2fe;color:#075985}
+    .yellow{background:#fef3c7;color:#78350f}
+    .red{background:#fee2e2;color:var(--red)}
+    .gray{background:#f1f5f9;color:#334155}
+    input[type=file]{display:none}
+    .uploadBox{border:2px dashed #cbd5e1;background:#fafafa;border-radius:18px;padding:14px;text-align:center}
+    .preview{display:none;width:100%;max-height:250px;object-fit:contain;border-radius:14px;border:1px solid var(--line);background:#fff;margin-top:10px}
+    form{display:grid;gap:10px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    label{font-size:13px;font-weight:800;color:#374151}
+    input,select,textarea{
+      width:100%;margin-top:5px;padding:12px;border:1px solid #d1d5db;border-radius:12px;
+      font-size:16px;background:#fff
+    }
+    textarea{min-height:70px}
+    .hint{font-size:12px;line-height:1.55;color:var(--muted);background:#f8fafc;border-radius:12px;padding:10px}
+    .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:9px}
+    .tableWrap{overflow:auto;border:1px solid var(--line);border-radius:14px}
+    table{width:100%;border-collapse:collapse;font-size:13px;background:#fff}
+    th,td{border-bottom:1px solid var(--line);padding:9px 7px;text-align:left;white-space:nowrap}
+    th{background:#f8fafc;color:#64748b;font-size:12px}
+    .empty{text-align:center;color:var(--muted);padding:18px;font-size:13px}
+    .mini{width:auto;padding:6px 8px;font-size:12px;border-radius:10px}
+    .pill{display:inline-block;padding:3px 8px;border-radius:999px;font-weight:800;font-size:12px}
+    .income{background:#dcfce7;color:#166534}
+    .expense{background:#fee2e2;color:#991b1b}
+    footer{max-width:860px;margin:8px auto 0;padding:0 14px;color:#94a3b8;font-size:11px;text-align:center}
+    @media(max-width:480px){.big{font-size:30px}.row{grid-template-columns:1fr}.actions{grid-template-columns:1fr}.card{padding:14px;border-radius:16px}}
+  </style>
+</head>
+<body>
+<header>
+  <div class="head">
+    <div class="logo">￥</div>
+    <div>
+      <h1>現金出納帳</h1>
+      <div class="small">準備金・小口現金・領収書管理</div>
+    </div>
+  </div>
+</header>
 
+<main>
+  <section class="dash">
+    <div class="balance">
+      <div class="label">現在残高</div>
+      <div class="big" id="balance">¥0</div>
+    </div>
+    <div class="metric"><div class="label">入金合計</div><div class="num" id="income">¥0</div></div>
+    <div class="metric"><div class="label">出金合計</div><div class="num" id="expense">¥0</div></div>
+  </section>
+
+  <section class="card">
+    <h2>① 領収書の撮影・アップロード</h2>
+    <div class="uploadBox">
+      <label for="imageInput" class="fileBtn">📷 領収書を撮影・選択</label>
+      <input id="imageInput" type="file" accept="image/*" capture="environment">
+      <img id="preview" class="preview" alt="領収書画像">
+    </div>
+    <div style="height:10px"></div>
+    <button class="blue" id="ocrBtn">② AI解析して自動入力</button>
+    <div class="hint" style="margin-top:10px">
+      この完成版はスマホ保存・CSV出力・オフライン起動に対応しています。AI解析はブラウザ単体で動く仮解析です。本物のOCR連携はAPIキー設定が必要です。
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>入力フォーム</h2>
+    <form id="form">
+      <div class="tabs">
+        <button type="button" class="tab active" data-type="expense">出金</button>
+        <button type="button" class="tab" data-type="income">入金</button>
+      </div>
+      <input type="hidden" id="type" value="expense">
+      <div class="row">
+        <label>日付<input id="date" type="date" required></label>
+        <label>金額<input id="amount" type="number" inputmode="numeric" placeholder="例：1200" required></label>
+      </div>
+      <label>店舗名・相手先<input id="store" type="text" placeholder="例：スーパー、ガソリンスタンド"></label>
+      <label>用途<select id="purpose">
+        <option>仕入れ</option><option>備品</option><option>交通費</option><option>ガソリン代</option>
+        <option>駐車場代</option><option>食材</option><option>消耗品</option><option>売上入金</option><option>その他</option>
+      </select></label>
+      <label>メモ<textarea id="memo" placeholder="必要に応じてメモ"></textarea></label>
+      <button class="primary" type="submit">帳簿に追加</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>③ 一覧・CSV出力</h2>
+    <div class="actions">
+      <button class="blue" id="csvBtn">CSVダウンロード</button>
+      <button class="yellow" id="monthBtn">今月だけ表示</button>
+      <button class="gray" id="allBtn">全件表示</button>
+      <button class="red" id="clearBtn">全削除</button>
+    </div>
+    <div class="tableWrap">
+      <table>
+        <thead><tr><th>日付</th><th>区分</th><th>金額</th><th>店舗名</th><th>用途</th><th>メモ</th><th>操作</th></tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <div id="empty" class="empty">まだ記録がありません。</div>
+  </section>
+</main>
+
+<footer>データはこの端末のブラウザ内に保存されます。端末変更・ブラウザ削除前はCSV保存してください。</footer>
+
+<script>
+const KEY="cashbook_pwa_entries_v2";
+let entries=JSON.parse(localStorage.getItem(KEY)||"[]");
+let filterMonth=false;
+let lastFileName="";
+const $=id=>document.getElementById(id);
+const yen=n=>"¥"+Number(n||0).toLocaleString("ja-JP");
+const today=()=>new Date().toISOString().slice(0,10);
+$("date").value=today();
+
+if("serviceWorker" in navigator){ navigator.serviceWorker.register("./service-worker.js").catch(()=>{}); }
+
+document.querySelectorAll(".tab").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    $("type").value=btn.dataset.type;
+  };
+});
+
+$("imageInput").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f)return;
+  lastFileName=f.name||"";
+  $("preview").src=URL.createObjectURL(f);
+  $("preview").style.display="block";
+});
+
+$("ocrBtn").onclick=()=>{
+  const name=(lastFileName||"").toLowerCase();
+  $("date").value=today();
+  $("type").value="expense";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.type==="expense"));
+  const num=name.match(/(\d{3,7})/);
+  if(num) $("amount").value=num[1];
+  let store="未解析";
+  if(name.includes("seven")||name.includes("711")) store="セブンイレブン";
+  else if(name.includes("lawson")) store="ローソン";
+  else if(name.includes("famima")||name.includes("family")) store="ファミリーマート";
+  else if(name.includes("aeon")) store="イオン";
+  else if(name.includes("cosmo")||name.includes("eneos")||name.includes("gas")) store="ガソリンスタンド";
+  $("store").value=store;
+  if(name.includes("gas")||name.includes("fuel")||name.includes("eneos")) $("purpose").value="ガソリン代";
+  else if(name.includes("food")||name.includes("仕入")) $("purpose").value="仕入れ";
+  else if(name.includes("parking")) $("purpose").value="駐車場代";
+  else $("purpose").value="その他";
+  $("memo").value="領収書画像からAI解析デモ入力";
+  alert("解析デモで入力しました。内容を確認して「帳簿に追加」を押してください。");
+};
+
+$("form").onsubmit=e=>{
+  e.preventDefault();
+  entries.unshift({
+    id:Date.now(), date:$("date").value, type:$("type").value, amount:Number($("amount").value||0),
+    store:$("store").value.trim(), purpose:$("purpose").value, memo:$("memo").value.trim()
+  });
+  save();
+  e.target.reset(); $("date").value=today(); $("type").value="expense";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.type==="expense"));
+};
+
+function save(){localStorage.setItem(KEY,JSON.stringify(entries));render();}
+function removeEntry(id){entries=entries.filter(e=>e.id!==id);save();}
+window.removeEntry=removeEntry;
+
+function shown(){
+  if(!filterMonth)return entries;
+  const ym=today().slice(0,7);
+  return entries.filter(e=>(e.date||"").slice(0,7)===ym);
+}
+
+function render(){
+  const list=shown(), tb=$("tbody"); tb.innerHTML="";
+  let inc=0, exp=0;
+  entries.forEach(e=>{ if(e.type==="income")inc+=e.amount; else exp+=e.amount; });
+  $("income").textContent=yen(inc); $("expense").textContent=yen(exp); $("balance").textContent=yen(inc-exp);
+  list.forEach(e=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>${e.date}</td><td><span class="pill ${e.type}">${e.type==="income"?"入金":"出金"}</span></td>
+    <td>${yen(e.amount)}</td><td>${esc(e.store)}</td><td>${esc(e.purpose)}</td><td>${esc(e.memo)}</td>
+    <td><button class="mini red" onclick="removeEntry(${e.id})">削除</button></td>`;
+    tb.appendChild(tr);
+  });
+  $("empty").style.display=list.length?"none":"block";
+}
+function esc(s){return String(s||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]));}
+
+$("csvBtn").onclick=()=>{
+  const rows=[["日付","区分","金額","店舗名","用途","メモ"],...entries.map(e=>[e.date,e.type==="income"?"入金":"出金",e.amount,e.store,e.purpose,e.memo])];
+  const csv=rows.map(r=>r.map(v=>`"${String(v??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob=new Blob(["\uFEFF"+csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob); const a=document.createElement("a");
+  a.href=url; a.download="現金出納帳_"+today()+".csv"; a.click(); URL.revokeObjectURL(url);
+};
+$("monthBtn").onclick=()=>{filterMonth=true;render();};
+$("allBtn").onclick=()=>{filterMonth=false;render();};
+$("clearBtn").onclick=()=>{if(confirm("全データを削除しますか？")){entries=[];save();}};
+render();
+</script>
+</body>
+</html>
